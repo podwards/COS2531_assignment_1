@@ -1,10 +1,11 @@
+import java.util.Arrays;
 import java.util.Collections;
 
  class RobotControl
  {
    private Robot r;
    private int[] blockTops, blockPositions, blockHeights;
-   private int h, w, d, nBlocks; 
+   private int h, w, d, nBlocks, grabberH, currentLoad; 
    
    public RobotControl(Robot r)
    {
@@ -12,11 +13,13 @@ import java.util.Collections;
        this.h = 2;
        this.w = 1;
        this.d = 1;
+       this.grabberH = 1;
+       this.currentLoad = -1; // i.e no block being carried.
    }
    
    private void printStatus()
    {
-	   System.out.format("Status: H = %d W = %d D = %d%n", this.h, this.w, this.d);
+	   System.out.format("Status: H = %d W = %d D = %d G= %d%n", this.h, this.w, this.d, this.grabberH);
    }
    
    private void changeH(int dH)
@@ -34,6 +37,7 @@ import java.util.Collections;
 		   }
 	   }
 	   this.h += dH;
+	   this.grabberH += dH;
 	   this.printStatus();
    }
    
@@ -57,6 +61,7 @@ import java.util.Collections;
    
    private void changeD(int dD)
    {
+	   // if dD is positive, the grabber is moving up
 	   if (dD < 0) {
 		   for(int i = 0; i < dD*-1; i++)
 		   {
@@ -70,6 +75,7 @@ import java.util.Collections;
 		   }
 	   }
 	   this.d += dD;
+	   this.grabberH += dD;
 	   this.printStatus();
    }
    
@@ -80,6 +86,7 @@ import java.util.Collections;
 	   int nBlocks = blockHeights.length;
 	   int[] blockTops = new int[nBlocks];
 	   int[] blockPositions = new int[nBlocks];
+	   blockPositions[0] = 10;
 	   blockTops[0] = blockHeights[0];
 	   for (int i = 1; i < nBlocks; i++)
 	   {
@@ -89,6 +96,9 @@ import java.util.Collections;
 	   this.blockPositions = blockPositions;
 	   this.blockTops = blockTops;
 	   this.nBlocks = nBlocks;
+	   System.out.format("positions: %s%n", Arrays.toString(this.blockPositions));
+	   System.out.format("tops: %s%n", Arrays.toString(this.blockTops));
+
 			 
    }
       
@@ -134,7 +144,7 @@ import java.util.Collections;
    {
 	   // Todo: combine this with blockHeightAtPosition, leaving to keep things
 	   //       explicit.
-	   int blockIdx = 0;
+	   int blockIdx = -1;
 	   int maxHeight = 0;
 	   for (int i = 0; i < this.nBlocks; i++)
 	   {
@@ -152,38 +162,55 @@ import java.util.Collections;
    private void pickAtPosition()
    {
 	   int blockIdx = this.topBlockAtPosition();
+	   if (blockIdx == -1)
+	   {
+		   System.err.format("There's nothing to pick up!");
+	   }
+	   this.currentLoad = blockIdx; 
 	   int heightOfBlock = this.blockTops[blockIdx];
-	   int drop = heightOfBlock - this.h + 2; //
+	   int drop = heightOfBlock - this.grabberH; //
+	   System.out.format("Taking block %d%n", blockIdx);
 	   System.out.format("Dropping by %d to %d%n", drop, heightOfBlock);
 	   this.changeD(drop);
 	   r.pick();
+	   this.changeD(-drop);
+
    }
    
    private void dropAtPosition()
    {
 	   int blockIdx = this.topBlockAtPosition();
-	   int heightOfBlock = this.blockTops[blockIdx];
-	   int blockSize = this.blockHeights[blockIdx];
-	   int drop = heightOfBlock - this.h + blockSize;
-	   System.out.format("Dropping by %d%n", drop);
+	   int heightOfPile;
+	   if (blockIdx == -1)
+	   {
+		   heightOfPile = 0;
+	   }
+	   else
+	   {
+		   heightOfPile = this.blockTops[blockIdx];
+	   }
+	   int droppedBlock = this.currentLoad;
+	   System.out.format("Top block is %d and it's height is %d%n", blockIdx, heightOfPile);
+	   System.out.format("%s%n", Arrays.toString(this.blockHeights));
+	   int heightOfBlock = this.blockHeights[droppedBlock];
+	   System.out.format("Dropping a %d block from %d onto a pile %d high%n", heightOfBlock, this.grabberH, heightOfPile);
+	   int drop = heightOfBlock + heightOfPile - this.grabberH;
 	   this.changeD(drop);
-	   this.blockPositions[blockIdx] = 1;
-	   this.blockTops[blockIdx] -= drop;
+	   
+	   this.blockPositions[droppedBlock] = 1;
+	   this.blockTops[droppedBlock] = heightOfBlock + heightOfPile;
 	   r.drop();
+	   this.currentLoad = -1;
    }
    
    
    public void control(int barHeights[], int blockHeights[], int required[], boolean ordered)
    {
-
-	   
-	   
-	   // The first past can be solved easily  with out any arrays as the height of bars and blocks are fixed.
-	   // Use the method r.up(), r.down(), r.extend(), r.contract(), r.raise(), r.lower(), r.pick(), r.drop()
-	   // The code below will cause first arm to be moved up, the second arm to the right and the third to be lowered. 
+ 
 	   
 	   // things to keep track of:
-	   //     - h, w, d
+	   //     - h, w, d, grabberH (height of arm, expansion width, drop of grabber, and the
+	   //       the grabber height)
 	   //     - currentLoad
 	   
 	   // Use a series of calls to get blocks and move them:
@@ -200,23 +227,14 @@ import java.util.Collections;
 	   
 	   // move the top block to the target
 	   
-	   this.armToSource();
-	   this.pickAtPosition();
-	   this.armToTarget();
-	   this.dropAtPosition();
-	   this.armToSource();
-	   this.pickAtPosition();
-	   this.armToTarget();
-	   this.dropAtPosition();
+	   for (int i = 0; i < this.nBlocks; i++)
+	   {  
+		   this.armToSource();
+		   this.pickAtPosition();
+		   this.armToTarget();
+		   this.dropAtPosition();
+	   }
 	   
-
-	 
-	   
-	   
-	   
-	   
-	   // Make a method which reads all of the bar heights
-	   // Make a method that keeps track of all of the block positions
 	   
 	   // Part B requires you to access the array barHeights passed as argument as the robot arm must move
 	   // over the bars
