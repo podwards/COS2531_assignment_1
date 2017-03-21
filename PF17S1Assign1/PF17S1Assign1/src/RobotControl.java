@@ -3,17 +3,38 @@ import java.util.Arrays;
 class RobotControl
  {
    private Robot r;
-   private int[] blockTops, blockPositions, blockHeights, barHeights;
-   private int h, w, d, nBlocks, grabberH, currentLoad, heightOfReturn; 
+   private Block[] blocks;
+   private Block load;
+   private BlockPile targetPile, tempPile, sourcePile, currentPile;
+   private int[] barHeights;
+   private int h, w, d, grabberH, maxHeightArm, maxHeightGrabber; 
+   private int sourcePos, tempPos, targetPos;
    
    public RobotControl(Robot r)
    {
+	   // setup the crane positions
        this.r = r;
        this.h = 2;
        this.w = 1;
        this.d = 1;
        this.grabberH = 1;
-       this.currentLoad = -1; // i.e no block being carried.
+       
+       this.maxHeightArm = 14;
+       this.maxHeightGrabber = 14;
+    		  
+       
+       // make the piles where the Block's are stored
+       this.targetPile = new BlockPile(1);
+       this.tempPile = new BlockPile(9);
+       this.sourcePile = new BlockPile(10);
+       
+       // save the class variables
+       
+       this.tempPos = 9;
+       this.targetPos = 1;
+       this.sourcePos = 10;
+       
+       this.load = null;
    }
    
    private void printStatus()
@@ -81,34 +102,22 @@ class RobotControl
       
    private void setBlockPositions(int[] blockHeights)
    {
-	   // This call is when everything is at source
+	   // This call is when everything is at source (10)
 	   int nBlocks = blockHeights.length;
-	   int[] blockTops = new int[nBlocks];
-	   int[] blockPositions = new int[nBlocks];
-	   blockPositions[0] = 10;
-	   blockTops[0] = blockHeights[0];
-	   for (int i = 1; i < nBlocks; i++)
+	      
+	   for (int h: blockHeights)
 	   {
-		   blockTops[i] = blockHeights[i] + blockTops[i-1];
-		   blockPositions[i] = 10;
-	   }
-	   this.blockPositions = blockPositions;
-	   this.blockTops = blockTops;
-	   this.nBlocks = nBlocks;
-	   System.out.format("positions: %s%n", Arrays.toString(this.blockPositions));
-	   System.out.format("tops: %s%n", Arrays.toString(this.blockTops));
-
-			 
+		   load = new Block(h);
+		   this.sourcePile.push(load);
+	   }	 
    }
       
-   
    private void armToSource()
    {
 	   // later add optional arguments for height, for now use max of 14
 	   
 	   // ensure that the arm is elevated before moving
-	   this.setReturnHeight();
-	   int dH = this.heightOfReturn - this.h;
+	   int dH = this.maxHeightArm - this.h;
 	   int dW = 10 - this.w; 
 	   int dD = -this.d;
 	   this.changeD(dD);
@@ -120,85 +129,62 @@ class RobotControl
    private void armToTarget()
    {
 	   // later add optional arguments for height, for now use max of 14
-	   this.setReturnHeight();
 
-	   int dH = this.heightOfReturn - this.h;
+	   int dH = this.maxHeightArm - this.h;
 	   int dW = 1 - this.w; 
 	   this.changeH(dH);
 	   this.changeW(dW);
 		
    }
    
-   
-   private int topBlockAtPosition()
-   {
-	   // Todo: combine this with blockHeightAtPosition, leaving to keep things
-	   //       explicit.
-	   int blockIdx = -1;
-	   int maxHeight = 0;
-	   for (int i = 0; i < this.nBlocks; i++)
-	   {
-	       if (this.blockPositions[i] == this.w) {
-	    	   if (this.blockTops[i] > maxHeight)
-	    	   {
-	    		   maxHeight = this.blockTops[i];
-	    		   blockIdx = i;
-	    	   }
-	       }
-	   }
-	   return blockIdx;
-   }
-   
    private void pickAtPosition()
    {
-	   int blockIdx = this.topBlockAtPosition();
-	   if (blockIdx == -1)
+	   if (this.w == 10) // position is source
+	   {   
+		   currentPile = sourcePile;
+	   }else if (this.w == 9) // position is temp pile
 	   {
-		   System.err.format("There's nothing to pick up!");
+		   currentPile = tempPile;
+	   }else if (this.w == 1)
+	   {
+		   currentPile = targetPile;
+	   }else
+	   {
+		   // raise an error
 	   }
-	   this.currentLoad = blockIdx; 
-	   int heightOfBlock = this.blockTops[blockIdx];
-	   int drop = heightOfBlock - this.grabberH; //
-	   System.out.format("Taking block %d%n", blockIdx);
-	   System.out.format("Dropping by %d to %d%n", drop, heightOfBlock);
-	   this.changeD(drop);
+	   
+	   int pileHeight = currentPile.height;
+	   int drop = pileHeight - this.grabberH; //
+	   
+	   this.changeD(drop); // drop using the picker
 	   r.pick();
-	   this.changeD(-drop);
-
+	   this.load = currentPile.pop();
+	   this.changeD(-drop); // return to previous height
    }
    
    private void dropAtPosition()
    {
-	   int blockIdx = this.topBlockAtPosition();
-	   int heightOfPile;
-	   if (blockIdx == -1)
+	   if (this.w == 10) // position is source
+	   {   
+		   currentPile = sourcePile;
+	   }else if (this.w == 9) // position is temp pile
 	   {
-		   heightOfPile = 0;
-	   }
-	   else
+		   currentPile = tempPile;
+	   }else if (this.w == 1)
 	   {
-		   heightOfPile = this.blockTops[blockIdx];
+		   currentPile = targetPile;
+	   }else
+	   {
+		   // raise an error
 	   }
-	   int droppedBlock = this.currentLoad;
-	   System.out.format("Top block is %d and it's height is %d%n", blockIdx, heightOfPile);
-	   System.out.format("%s%n", Arrays.toString(this.blockHeights));
-	   int heightOfBlock = this.blockHeights[droppedBlock];
-	   System.out.format("Dropping a %d block from %d onto a pile %d high%n", heightOfBlock, this.grabberH, heightOfPile);
-	   int drop = heightOfBlock + heightOfPile - this.grabberH;
+	   
+	   int pileHeight = currentPile.height;
+	   int drop = pileHeight + load.size - this.grabberH;
 	   this.changeD(drop);
 	   
-	   this.blockPositions[droppedBlock] = 1;
-	   this.blockTops[droppedBlock] = heightOfBlock + heightOfPile;
 	   r.drop();
-	   this.currentLoad = -1;
-   }
-   
-   private void setReturnHeight()
-   {
-	   this.heightOfReturn = 14; // physically the highest it will go
-	   //int maxPileHeight = MyMath.max(this.blockTops);
-	   //int maxBarHeight = MyMath.max(this.barHeights);
-	   //this.heightOfReturn = Math.max(maxPileHeight, maxBarHeight) + 2;
+	   currentPile.push(this.load);
+	   this.load = null;
    }
    
    
@@ -219,61 +205,17 @@ class RobotControl
 	   //    - lowerToPosition: this will lower the arm of the crane such that the 
 	   //                       arm stops at the drop point considering the currentLoad
 	   
-	   
-	   // This should work for A - C. Need to do more to minimise the number of steps
-	   
-	   this.printStatus();
-	   this.blockHeights = blockHeights;
+	   this.setBlockPositions(blockHeights);  
 	   this.barHeights = barHeights;
-	   this.setBlockPositions(blockHeights);
 	   
-	   this.setReturnHeight();
-	   
-	   for (int i = 0; i < this.nBlocks; i++)
-	   {  
-		   this.armToSource();
-		   this.pickAtPosition();
-		   this.armToTarget();
-		   this.dropAtPosition();
+	   for (int height: blockHeights)
+	   {
+	       this.armToSource();
+	       this.pickAtPosition();
+	       this.armToTarget();
+	       this.dropAtPosition();
 	   }
-	   
-	   
-	   // Part D
-	   
-	   ///////////
-	   // Idea: //
-	   ///////////
-	   
-	   // Raise an error if the order not a permutation of the sizes.
-	   
-	   // While the topmost block is not of the desired size, move blocks from source
-	   // to temp. When the source block is of the desired size, move to target.
-	   
-	   // Naive next step
-	   
-	   // Keep moving from source to temp looking for the next desired size. Again, once
-	   // found, move to the target. If the source pile becomes empty, start digging in the 
-	   // other. 
-	   
-	   // Better next step
-	   
-	   // Keep track of the sizes so we can choose to dig in the correct pile
-	   
-	   // Even better
-	   
-	   // ???
-	   
-	   // The fourth part allows the user  to specify the order in which bars must 
-	   // be placed in the target column. This will require you to use the use additional column
-	   // which can hold temporary values
-	   
-
-	   
-	   
-	   
-	   // The last part requires you to write the code to move from source column to target column using
-	   // an additional temporary column but without placing a larger block on top of a smaller block 
-	   
+	  
    }
  
 }  
