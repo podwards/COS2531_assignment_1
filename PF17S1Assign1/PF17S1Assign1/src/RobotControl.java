@@ -1,11 +1,10 @@
 import java.util.Arrays;
-import java.util.Collections;
 
- class RobotControl
+class RobotControl
  {
    private Robot r;
-   private int[] blockTops, blockPositions, blockHeights;
-   private int h, w, d, nBlocks, grabberH, currentLoad; 
+   private int[] blockTops, blockPositions, blockHeights, barHeights;
+   private int h, w, d, nBlocks, grabberH, currentLoad, heightOfReturn; 
    
    public RobotControl(Robot r)
    {
@@ -108,7 +107,8 @@ import java.util.Collections;
 	   // later add optional arguments for height, for now use max of 14
 	   
 	   // ensure that the arm is elevated before moving
-	   int dH = 14 - this.h;
+	   this.setReturnHeight();
+	   int dH = this.heightOfReturn - this.h;
 	   int dW = 10 - this.w; 
 	   int dD = -this.d;
 	   this.changeD(dD);
@@ -120,25 +120,15 @@ import java.util.Collections;
    private void armToTarget()
    {
 	   // later add optional arguments for height, for now use max of 14
-	   int dH = 14 - this.h;
+	   this.setReturnHeight();
+
+	   int dH = this.heightOfReturn - this.h;
 	   int dW = 1 - this.w; 
 	   this.changeH(dH);
 	   this.changeW(dW);
 		
    }
    
-   private int blockHeightAtPosition()
-   {
-	   int heightOfBlock = 0;
-	   for (int i = 0; i < this.nBlocks; i++)
-	   {
-	       if (this.blockPositions[i] == this.w) {
-	    	   heightOfBlock = Math.max(heightOfBlock, this.blockTops[i]);
-	       }
-	    	   
-	   }
-	   return heightOfBlock;
-   }
    
    private int topBlockAtPosition()
    {
@@ -203,6 +193,14 @@ import java.util.Collections;
 	   this.currentLoad = -1;
    }
    
+   private void setReturnHeight()
+   {
+	   this.heightOfReturn = 14; // physically the highest it will go
+	   //int maxPileHeight = MyMath.max(this.blockTops);
+	   //int maxBarHeight = MyMath.max(this.barHeights);
+	   //this.heightOfReturn = Math.max(maxPileHeight, maxBarHeight) + 2;
+   }
+   
    
    public void control(int barHeights[], int blockHeights[], int required[], boolean ordered)
    {
@@ -221,11 +219,15 @@ import java.util.Collections;
 	   //    - lowerToPosition: this will lower the arm of the crane such that the 
 	   //                       arm stops at the drop point considering the currentLoad
 	   
+	   
+	   // This should work for A - C. Need to do more to minimise the number of steps
+	   
 	   this.printStatus();
 	   this.blockHeights = blockHeights;
+	   this.barHeights = barHeights;
 	   this.setBlockPositions(blockHeights);
 	   
-	   // move the top block to the target
+	   this.setReturnHeight();
 	   
 	   for (int i = 0; i < this.nBlocks; i++)
 	   {  
@@ -236,17 +238,30 @@ import java.util.Collections;
 	   }
 	   
 	   
-	   // Part B requires you to access the array barHeights passed as argument as the robot arm must move
-	   // over the bars
+	   // Part D
 	   
-	     
+	   ///////////
+	   // Idea: //
+	   ///////////
 	   
+	   // Raise an error if the order not a permutation of the sizes.
 	   
-	   // The third part requires you to access the arrays barHeights and blockHeights 
-	   // as the heights of bars and blocks are allowed to vary through command line arguments
+	   // While the topmost block is not of the desired size, move blocks from source
+	   // to temp. When the source block is of the desired size, move to target.
 	   
-
+	   // Naive next step
 	   
+	   // Keep moving from source to temp looking for the next desired size. Again, once
+	   // found, move to the target. If the source pile becomes empty, start digging in the 
+	   // other. 
+	   
+	   // Better next step
+	   
+	   // Keep track of the sizes so we can choose to dig in the correct pile
+	   
+	   // Even better
+	   
+	   // ???
 	   
 	   // The fourth part allows the user  to specify the order in which bars must 
 	   // be placed in the target column. This will require you to use the use additional column
