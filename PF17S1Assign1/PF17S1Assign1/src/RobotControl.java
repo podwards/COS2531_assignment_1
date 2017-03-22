@@ -45,7 +45,7 @@ class RobotControl
    
    private void printStatus()
    {
-	   System.out.format("Status: H = %d W = %d D = %d G= %d%n", this.h, this.w, this.d, this.grabberH);
+	   //System.out.format("Status: H = %d W = %d D = %d G= %d%n", this.h, this.w, this.d, this.grabberH);
    }
    
    private void changeH(int dH)
@@ -202,40 +202,87 @@ class RobotControl
 	   heights[10] = 0; // these get updated with push and pops
    }
    
-   public void control(int barHeights[], int blockHeights[], int required[], boolean ordered)
+   private void moveBlocksFromSourceToStackSimple(int [] blockHeights)
    {
- 
-	   
-	   // things to keep track of:
-	   //     - h, w, d, grabberH (height of arm, expansion width, drop of grabber, and the
-	   //       the grabber height)
-	   //     - currentLoad
-	   
-	   // Use a series of calls to get blocks and move them:
-	   //    - armToSource: this will move arm ensuring that crane doesn't hit bars to
-	   //                   the source position.
-	   //    - armToTemp: similar
-	   //    - armToTarget: similar
-	   //    - lowerToPosition: this will lower the arm of the crane such that the 
-	   //                       arm stops at the drop point considering the currentLoad
-	   
-	   this.setHeights(barHeights);
-	   this.setBlockPositions(blockHeights);  
-	   
 	   for (int h: blockHeights)
 	   {
 	       this.armToPosition(10);
 	       this.pickAtPosition(10);
-	       this.armToPosition(9);
-	       this.dropAtPosition(9);
-	   }
-	   for (int h: blockHeights)
-	   {
-	       this.armToPosition(9);
-	       this.pickAtPosition(9);
 	       this.armToPosition(1);
 	       this.dropAtPosition(1);
+	   }   
+   }
+   
+   private void moveToDifferentSourcePile()
+   {
+	   if (this.w == this.sourcePos)
+	   {
+		   this.armToPosition(this.tempPos);
+	   }else if (this.w == this.tempPos)
+	   {
+		   this.armToPosition(this.sourcePos);
+	   }else
+	   {
+		   this.armToPosition(this.sourcePos);
 	   }
+   }
+   
+   private void shiftTopBlock()
+   {
+	   System.out.format("shifting from %d%n", this.w);
+	   this.pickAtPosition(this.w);
+	   this.moveToDifferentSourcePile();
+	   this.dropAtPosition(this.w);
+	   this.moveToDifferentSourcePile();
+   }
+   
+   private void searchAndMove(int size)
+   {
+	   currentPile = this.piles[this.w];
+	   int digTo = currentPile.sizeSearch(size);
+	   if (digTo==-1)
+	   { 
+		   this.moveToDifferentSourcePile(); // let's try recursive later...
+	   }
+	   
+	   currentPile = this.piles[this.w];
+	   digTo = currentPile.sizeSearch(size);
+	   
+	   for (int i = 1; i < digTo; i++)
+	   {
+	       this.shiftTopBlock();      
+	   }
+	   
+	   System.out.println("ere?");
+	   this.pickAtPosition(this.w);
+	   this.armToPosition(this.targetPos);
+	   System.out.format("dropping at %d%n", this.w);
+	   this.dropAtPosition(this.w);
+	   this.moveToDifferentSourcePile();
+   }
+   
+   private void moveBlocksInOrder(int blockHeights[], int required[])
+   {
+	   for (int size: required)
+	   {
+		   System.out.format("Start search for %d%n", size);
+		   this.searchAndMove(size);
+	   }
+   }
+
+   
+   public void control(int barHeights[], int blockHeights[], int required[], boolean ordered)
+   {
+   
+	   this.setHeights(barHeights);
+	   this.setBlockPositions(blockHeights);  
+	   
+	   if (required.length == 0) 
+	       {this.moveBlocksFromSourceToStackSimple(blockHeights);}
+	   
+	   this.moveBlocksInOrder(blockHeights, required);
+	   
+	   
 	  
    }
  
