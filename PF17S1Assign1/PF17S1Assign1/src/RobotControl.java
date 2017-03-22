@@ -4,9 +4,10 @@ class RobotControl
  {
    private Robot r;
    private Block[] blocks;
-   private Block load;
+   private Block load, nullBlock;
    private BlockPile targetPile, tempPile, sourcePile, currentPile;
-   private int[] barHeights;
+   private BlockPile[] piles;
+   private int[] heights;
    private int h, w, d, grabberH, maxHeightArm, maxHeightGrabber; 
    private int sourcePos, tempPos, targetPos;
    
@@ -16,17 +17,20 @@ class RobotControl
        this.r = r;
        this.h = 2;
        this.w = 1;
-       this.d = 1;
+       this.d = 0;
        this.grabberH = 1;
        
        this.maxHeightArm = 14;
        this.maxHeightGrabber = 14;
     		  
+       this.piles = new BlockPile[11];
        
        // make the piles where the Block's are stored
-       this.targetPile = new BlockPile(1);
-       this.tempPile = new BlockPile(9);
-       this.sourcePile = new BlockPile(10);
+       int[] pile_positions = {1,9,10};
+       for (int p: pile_positions)
+       {
+    	   this.piles[p] = new BlockPile(p);
+       }	 
        
        // save the class variables
        
@@ -34,7 +38,9 @@ class RobotControl
        this.targetPos = 1;
        this.sourcePos = 10;
        
-       this.load = null;
+       
+       nullBlock = new Block(0);
+       this.load = nullBlock;
    }
    
    private void printStatus()
@@ -99,94 +105,102 @@ class RobotControl
 	   this.printStatus();
    }
    
-      
    private void setBlockPositions(int[] blockHeights)
    {
 	   // This call is when everything is at source (10)
-	   int nBlocks = blockHeights.length;
 	      
 	   for (int h: blockHeights)
 	   {
 		   load = new Block(h);
-		   this.sourcePile.push(load);
+		   piles[this.sourcePos].push(load);
 	   }	 
+	   this.heights[this.sourcePos] = piles[this.sourcePos].height;
+   }
+   
+   private int getClearanceHeight()
+   {
+	   return MyMath.max(this.heights);
    }
       
-   private void armToSource()
+   private void resetArmHeight()
+   {
+	   // try get clearance by increasing grabber height first, then try arm height
+	   System.out.format("Grabber height = %d%n", this.grabberH);
+	   int dG = getClearanceHeight() - this.grabberH; // total increase in grabber height
+	   int dD, dH;
+	   if (dG <= -this.d)
+	   {
+		   dD = dG;
+		   dH = 0; // can get by moving grabber
+	   }
+	   else
+	   {
+		   dD = -this.d;
+		   dH = dG - dD;
+	   }
+	   
+	   System.out.format("dD = %d dH  %d%n", dD, dH);
+	   
+	   this.changeD(dD);
+	   this.changeH(dH);
+
+   }
+   
+   private void armToPosition(int p)
    {
 	   // later add optional arguments for height, for now use max of 14
 	   
 	   // ensure that the arm is elevated before moving
-	   int dH = this.maxHeightArm - this.h;
-	   int dW = 10 - this.w; 
-	   int dD = -this.d;
-	   this.changeD(dD);
-	   this.changeH(dH);
+	   this.resetArmHeight();
+	   int dW = p - this.w; 
 	   this.changeW(dW);
 		
    }
    
-   private void armToTarget()
+   private void pickAtPosition(int p)
    {
-	   // later add optional arguments for height, for now use max of 14
-
-	   int dH = this.maxHeightArm - this.h;
-	   int dW = 1 - this.w; 
-	   this.changeH(dH);
-	   this.changeW(dW);
-		
-   }
-   
-   private void pickAtPosition()
-   {
-	   if (this.w == 10) // position is source
-	   {   
-		   currentPile = sourcePile;
-	   }else if (this.w == 9) // position is temp pile
-	   {
-		   currentPile = tempPile;
-	   }else if (this.w == 1)
-	   {
-		   currentPile = targetPile;
-	   }else
-	   {
-		   // raise an error
-	   }
+	   currentPile = this.piles[p];
 	   
 	   int pileHeight = currentPile.height;
 	   int drop = pileHeight - this.grabberH; //
 	   
 	   this.changeD(drop); // drop using the picker
+	   System.out.println("picking...");
 	   r.pick();
 	   this.load = currentPile.pop();
-	   this.changeD(-drop); // return to previous height
+	   this.grabberH -= this.load.size;
+	   this.heights[p] = currentPile.height;
+	   
    }
    
-   private void dropAtPosition()
+   private void dropAtPosition(int p)
    {
-	   if (this.w == 10) // position is source
-	   {   
-		   currentPile = sourcePile;
-	   }else if (this.w == 9) // position is temp pile
-	   {
-		   currentPile = tempPile;
-	   }else if (this.w == 1)
-	   {
-		   currentPile = targetPile;
-	   }else
-	   {
-		   // raise an error
-	   }
+	   currentPile = this.piles[p];
 	   
-	   int pileHeight = currentPile.height;
-	   int drop = pileHeight + load.size - this.grabberH;
-	   this.changeD(drop);
+	   int drop = this.grabberH - currentPile.height;
+	   System.out.format("Dropping by %d%n", drop);
+	   this.changeD(-drop);
 	   
 	   r.drop();
 	   currentPile.push(this.load);
-	   this.load = null;
+	   this.grabberH += this.load.size;
+	   this.load = this.nullBlock;
+	   this.heights[p] = currentPile.height;
+
    }
    
+   private void setHeights(int barHeights[])
+   {
+	   heights = new int[11]; // positions labeled 1-10, I'll follow same convention here
+	   for (int i = 1; i < barHeights.length; i++)
+	   {
+		   // assumes bars get placed from 2, may not be true, but doesn't matter
+		   heights[i+1] = barHeights[i];
+	   }
+	   heights[1] = 0; // nothing at target yet
+	   heights[9] = 0;
+	   heights[10] = 0; // these get updated with push and pops
+   }
    
    public void control(int barHeights[], int blockHeights[], int required[], boolean ordered)
    {
@@ -205,15 +219,22 @@ class RobotControl
 	   //    - lowerToPosition: this will lower the arm of the crane such that the 
 	   //                       arm stops at the drop point considering the currentLoad
 	   
+	   this.setHeights(barHeights);
 	   this.setBlockPositions(blockHeights);  
-	   this.barHeights = barHeights;
 	   
-	   for (int height: blockHeights)
+	   for (int h: blockHeights)
 	   {
-	       this.armToSource();
-	       this.pickAtPosition();
-	       this.armToTarget();
-	       this.dropAtPosition();
+	       this.armToPosition(10);
+	       this.pickAtPosition(10);
+	       this.armToPosition(9);
+	       this.dropAtPosition(9);
+	   }
+	   for (int h: blockHeights)
+	   {
+	       this.armToPosition(9);
+	       this.pickAtPosition(9);
+	       this.armToPosition(1);
+	       this.dropAtPosition(1);
 	   }
 	  
    }
