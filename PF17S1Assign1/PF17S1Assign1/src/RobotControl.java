@@ -13,18 +13,18 @@ class RobotControl
    /* This method sets the initial positions of things like the height of the 
     * arm, the grabber height, depth of grabber etc. It also creates all the
     * BlockPiles where all the blocks can be placed. 
-    */
-   
+    */ 
    public RobotControl(Robot r)
    {
 	   // setup the crane positions
-       this.r = r;
-       this.h = 2;
-       this.w = 1;
-       this.d = 0;
-       this.grabberH = 1;
-       
-       this.maxHeightArm = 14;
+       this.r = r; // TODO: remove this?
+       this.h = 2; // the height of the arm of the Robot
+       this.w = 1; /* the width of the arm of the Robot, and the lateral position
+       				  of the grabber and whatever load it has.*/
+       this.d = 0; // the depth of the grabber arm
+       this.grabberH = 1; /* the effective height of the grabber which includes
+       						 the size of the load*/
+       this.maxHeightArm = 14; // TODO: remove these?
        this.maxHeightGrabber = 14;
     		  
        this.piles = new BlockPile[11];
@@ -241,8 +241,10 @@ class RobotControl
    }
    
    /*
-    * Takes the Block from the load variable and sets it on top of the BlockPile
-    * at the current position. Sets the load variable to the nullBlock.
+    * Firstly, drop the grabber to the height of the grabber (which includes the
+    * current load. Then it takes the Block from the load variable and sets it 
+    * on top of the BlockPile at the current position. Sets the load variable 
+    * to the nullBlock.
     */
    private void dropAtPosition()
    {
@@ -260,8 +262,8 @@ class RobotControl
    }
    
    /*
-    * Using a for loop, move each block from the source position to the target
-    * position.
+    * Using a for loop and lots of helper functions, move each block from the
+    * source position to the target position.
     * 
     * @param blockHeights 		the array of blockHeights as passed by the user.
     */
@@ -289,7 +291,12 @@ class RobotControl
 		   this.armToPosition(this.sourcePos);
 	   }
    }
-   
+   /*
+    *  This function looks at the pile that we're in, and then shifts it to the
+    *  'other' source pile, which is the original source or maybe the temp pile.
+    *  This shifting of blocks is used by the searchAndMove method to try and 
+    *  locate the correct block to send to the target.
+    */
    private void shiftTopBlock()
    {
 	   System.out.format("shifting from %d%n", this.w);
@@ -332,7 +339,6 @@ class RobotControl
 	   }
    }
 
-   
    public void control(int barHeights[], int blockHeights[], int required[], boolean ordered)
    {
    
