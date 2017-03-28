@@ -13,6 +13,8 @@ class RobotControl
    /* This method sets the initial positions of things like the height of the 
     * arm, the grabber height, depth of grabber etc. It also creates all the
     * BlockPiles where all the blocks can be placed. 
+    * 
+    * @param r 	The Robot object that this controls
     */ 
    public RobotControl(Robot r)
    {
@@ -24,10 +26,12 @@ class RobotControl
        this.d = 0; // the depth of the grabber arm
        this.grabberH = 1; /* the effective height of the grabber which includes
        						 the size of the load*/
-       this.maxHeightArm = 14; // TODO: remove these?
-       this.maxHeightGrabber = 14;
+       this.maxHeightArm = 14; // TODO: remove this?
+       this.maxHeightGrabber = 14; // TODO: remove this?
     		  
-       this.piles = new BlockPile[11];
+       this.piles = new BlockPile[11]; /* this array is used to find the correct
+       								      pile based on the current position of
+       								      the arm (this.w).*/
        
        // make the piles where the Block's are stored
        int[] pile_positions = {1,9,10};
@@ -43,7 +47,8 @@ class RobotControl
        this.sourcePos = 10;
        
        
-       nullBlock = new Block(0);
+       nullBlock = new Block(0); /* this is basically a place holder for the 
+       							    load.*/
        this.load = nullBlock;
    }
    
@@ -61,7 +66,7 @@ class RobotControl
 	    * is looked at by the resetArmMethod and updated by the pickAtPosition
 	    * and dropAtPosition methods whenever blocks are moved.*/
 	   this.heights = new int[11]; 
-	   
+	   	   
 	   for (int i = 1; i < barHeights.length; i++)
 	   {
 		   // assumes bars get placed from 2, may not be true, but doesn't matter
@@ -80,7 +85,6 @@ class RobotControl
     */
    private void setBlockPositions(int[] blockHeights)
    {
-	         
 	   for (int h: blockHeights)
 	   {
 		   load = new Block(h);
