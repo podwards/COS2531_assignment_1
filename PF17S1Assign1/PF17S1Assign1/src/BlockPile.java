@@ -1,9 +1,32 @@
 import java.util.Stack;
+
+/**
+ * Returns a BlockPile object that can then be used to store Block objects. 
+ * 
+ * The purpose is to make it easy to keep track of what gets put where. The 
+ * height of the pile is kept up to date whenever a block gets added or removed
+ * and the the search method is useful for the RobotControl to check whether a
+ * desired block is in the pile.
+ *
+ * @param  size  the position of the pile.
+ * @return      the BlockPile object without a defined position.
+ */
+
 public class BlockPile {
 	Stack<Block> stack;
 	Stack<Integer> sizeStack;
 	Block temp;
 	int height, position;
+	
+	/* 
+	 * This method initialses the pile. It creates a stack with nothing in it
+	 * and so it has a zero height. Because the stack object I've implemented
+	 * can't search for Blocks of a certain height (at least, I couldn't work 
+	 * it out), the sizeStack object is used to search for blocks of a 
+	 * certain size, and the stack and sizeStack are kept up to date together
+	 * to allow the stack object to effectively be searched for a block of
+	 * a specified size.
+	 */
 	
 	public BlockPile(int position)
 	{
