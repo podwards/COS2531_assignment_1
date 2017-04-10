@@ -197,13 +197,13 @@ class RobotControl
    * but never lower, so that wherever the robot moves the arm and load, there
    * are no collisions.
    */
-   private void resetArmHeight()
+   private void resetArmHeight(int requiredHeight)
    {
 	   // try get clearance by increasing grabber height first, then try arm height
 	   System.out.format("Grabber height = %d%n", this.grabberH);
 	   
 	   // Find the  total required increase in grabber height
-	   int dG = getClearanceHeight() - this.grabberH; 
+	   int dG = requiredHeight - this.grabberH; 
 	   int dD, dH;
 	   
 	   // See if we can change the height purely by changing the depth parameter
@@ -236,7 +236,8 @@ class RobotControl
 	   // later add optional arguments for height, for now use max of 14
 	   
 	   // ensure that the arm is elevated before moving
-	   this.resetArmHeight();
+	   int requiredHeight = getClearanceHeight();
+	   this.resetArmHeight(requiredHeight);
 	   
 	   // calculate the necessary change in position
 	   int dW = p - this.w; 
@@ -252,10 +253,8 @@ class RobotControl
    {
 	   currentPile = this.piles[this.w];
 	   
-	   int pileHeight = currentPile.height;
-	   int drop = pileHeight - this.grabberH; // the total decrease required
+	   this.resetArmHeight(currentPile.height);
 	   
-	   this.changeD(drop); // drop using the picker
 	   System.out.println("picking...");
 	   r.pick();
 	   this.load = currentPile.pop();
@@ -264,7 +263,7 @@ class RobotControl
 	   
    }
    
-   /*
+   /**
     * Firstly, drop the grabber to the height of the grabber (which includes the
     * current load. Then it takes the Block from the load variable and sets it 
     * on top of the BlockPile at the current position. Sets the load variable 
@@ -274,18 +273,16 @@ class RobotControl
    {
 	   currentPile = this.piles[this.w];
 	   
-	   int drop = this.grabberH - currentPile.height;
-	   System.out.format("Dropping by %d%n", drop);
-	   this.changeD(-drop);
+	   this.resetArmHeight(currentPile.height);
 	   
-	   r.drop();
-	   currentPile.push(this.load);
-	   this.grabberH += this.load.size;
-	   this.load = this.nullBlock;
-	   this.heights[this.w] = currentPile.height;
+	   r.drop();                        // this releases the load from the robot,
+	   currentPile.push(this.load);     // places the load onto the pile,
+	   this.grabberH += this.load.size; // and then adjusts the effective height 
+	   this.load = this.nullBlock;      // of the grabber height for a null load.
+	   this.heights[this.w] = currentPile.height; 
    }
    
-   /*
+   /**
     * Using a for loop and lots of helper functions, move each block from the
     * source position to the target position.
     * 
@@ -302,6 +299,11 @@ class RobotControl
 	   }   
    }
    
+   /**
+    * 'Source pile' in this sense is either the original source or the temp pile, 
+    * as both can be a source of blocks. This method moves the robot such that it
+    * has the opportunity to find a block in another pile that's not the target.
+    */
    private void moveToDifferentSourcePile()
    {
 	   if (this.w == this.sourcePos)
@@ -315,7 +317,8 @@ class RobotControl
 		   this.armToPosition(this.sourcePos);
 	   }
    }
-   /*
+   
+   /**
     *  This function looks at the pile that we're in, and then shifts it to the
     *  'other' source pile, which is the original source or maybe the temp pile.
     *  This shifting of blocks is used by the searchAndMove method to try and 
@@ -330,11 +333,20 @@ class RobotControl
 	   this.moveToDifferentSourcePile();
    }
    
+   /**
+    * This function looks for a block of a certain size in the pile that the
+    * robot is currently over. If it's not there, move to a different potential
+    * source (either the original source or the temporary pile). Once the block is
+    * found, the function moves blocks from the pile with the block until the required
+    * block is on top. It then moves that block to the target.
+    * 
+    * @param size	the size of the block to be found and moved once found to the target.
+    */
    private void searchAndMove(int size)
    {
 	   currentPile = this.piles[this.w];
 	   int digTo = currentPile.sizeSearch(size);
-	   if (digTo==-1)
+	   if (digTo==-1) // i.e there's no block of that size in the currentPile
 	   { 
 		   this.moveToDifferentSourcePile(); // let's try recursive later...
 	   }
@@ -354,7 +366,12 @@ class RobotControl
 	   this.moveToDifferentSourcePile();
    }
    
-   private void moveBlocksInOrder(int blockHeights[], int required[])
+   /**
+    * Implements the searchAndMove method by iterating through the required array.
+    * 
+    * @param required	the order that blocks need to be stacked at the target pile.
+    */
+   private void moveBlocksInOrder(int required[])
    {
 	   for (int size: required)
 	   {
@@ -372,7 +389,7 @@ class RobotControl
 	   if (required.length == 0) // This gets run for parts A-C
 	       {this.moveBlocksFromSourceToStackSimple(blockHeights);}
 	   else // This gets run for parts D and E
-	   	   {this.moveBlocksInOrder(blockHeights, required);}
+	   	   {this.moveBlocksInOrder(required);}
 	   
 	   
 	  
