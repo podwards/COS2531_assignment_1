@@ -93,16 +93,19 @@ class RobotControl
 	   this.heights[this.sourcePos] = piles[this.sourcePos].height;
    }
    
+   /**
+    * Prints status information of the current parameters of the robot arm.
+    */
    private void printStatus()
    {
 	   //System.out.format("Status: H = %d W = %d D = %d G= %d%n", this.h, this.w, this.d, this.grabberH);
    }
    
-   /*
-    * Changes the width of the robot arm by looping according to the change 
+   /**
+    * Changes the height of the robot arm by looping according to the change 
     * specified
     * 
-    * @param dW		the change in width from the current state.
+    * @param dW		the change in height from the current state.
     */
    private void changeH(int dH)
    {
@@ -122,6 +125,13 @@ class RobotControl
 	   this.grabberH += dH;
 	   this.printStatus();
    }
+   
+   /**
+    * Changes the width of the robot arm by looping according to the change 
+    * specified
+    * 
+    * @param dW		the change in width from the current state.
+    */
    private void changeW(int dW)
    {
 	   if (dW < 0) {
@@ -140,7 +150,7 @@ class RobotControl
 	   this.printStatus();
    }
    
-   /*
+   /**
    * Changes the width of depth of the grabber on the robot arm by looping according
    * to the change specified. In addition to the changing the depth of the arm, 
    * update the grabberH which is used to set the clearance height of the arm.
@@ -167,16 +177,20 @@ class RobotControl
 	   this.printStatus();
    }
 
-   /*
+   /**
     *  This decides what the clearance height of the grabber needs to be by looking
     *  at the heights array which is maintained with all block movements.
     */
    private int getClearanceHeight()
    {
+	   /* TODO: make this a bit smarter. It's better to look at the maximum height
+	    * that the robot will need to clear, rather than the maximum of all the 
+	    * heights.
+	    */
 	   return MyMath.max(this.heights);
    }
    
-   /*
+   /**
    * Changes the depth of the grabber and then maybe the height of the robot 
    * arm based on the what the highest object is. It doesn't yet consider where
    * the arm is going to be moving, so will potentially move higher than needed
@@ -187,17 +201,21 @@ class RobotControl
    {
 	   // try get clearance by increasing grabber height first, then try arm height
 	   System.out.format("Grabber height = %d%n", this.grabberH);
-	   int dG = getClearanceHeight() - this.grabberH; // total increase in grabber height
+	   
+	   // Find the  total required increase in grabber height
+	   int dG = getClearanceHeight() - this.grabberH; 
 	   int dD, dH;
+	   
+	   // See if we can change the height purely by changing the depth parameter
 	   if (dG <= -this.d)
 	   {
 		   dD = dG;
-		   dH = 0; // can get by moving grabber
+		   dH = 0; // can get by moving grabber only, no need to change arm height 
 	   }
-	   else
+	   else 
 	   {
-		   dD = -this.d;
-		   dH = dG - dD;
+		   dD = -this.d; // reduce the depth to zero
+		   dH = dG - dD; // and make up the difference with arm height
 	   }
 	   
 	   System.out.format("dD = %d dH  %d%n", dD, dH);
@@ -207,7 +225,7 @@ class RobotControl
 
    }
    
-   /*
+   /**
     * This method firstly ensures that the arm is set to an appropriate height
     * before changing the width of the arm to get to position p.
     * 
@@ -219,12 +237,14 @@ class RobotControl
 	   
 	   // ensure that the arm is elevated before moving
 	   this.resetArmHeight();
+	   
+	   // calculate the necessary change in position
 	   int dW = p - this.w; 
 	   this.changeW(dW);
 		
    }
    
-   /*
+   /**
     * Takes the top Block from the BlockPile at the current position and set it to 
     * the load variable
     */
@@ -233,7 +253,7 @@ class RobotControl
 	   currentPile = this.piles[this.w];
 	   
 	   int pileHeight = currentPile.height;
-	   int drop = pileHeight - this.grabberH; //
+	   int drop = pileHeight - this.grabberH; // the total decrease required
 	   
 	   this.changeD(drop); // drop using the picker
 	   System.out.println("picking...");
