@@ -90,7 +90,7 @@ class RobotControl
 		   load = new Block(h);
 		   piles[this.sourcePos].push(load); // This is called when everything is at source
 	   }	 
-	   this.heights[this.sourcePos] = piles[this.sourcePos].height;
+	   this.heights[this.sourcePos] = piles[this.sourcePos].getHeight();
    }
    
    /**
@@ -253,14 +253,14 @@ class RobotControl
    {
 	   currentPile = this.piles[this.w];
 	   
-	   this.resetArmHeight(currentPile.height);
+	   this.resetArmHeight(currentPile.getHeight());
 	   
 	   System.out.println("picking...");
 	   r.pick();
 	   this.load = currentPile.pop();
-	   this.grabberH -= this.load.size;
-	   this.heights[this.w] = currentPile.height;
-	   
+	   this.grabberH -= this.load.getSize();
+	   this.heights[this.w] = currentPile.getHeight();
+	  
    }
    
    /**
@@ -273,13 +273,13 @@ class RobotControl
    {
 	   currentPile = this.piles[this.w];
 	   
-	   this.resetArmHeight(currentPile.height);
+	   this.resetArmHeight(currentPile.getHeight());
 	   
 	   r.drop();                        // this releases the load from the robot,
 	   currentPile.push(this.load);     // places the load onto the pile,
-	   this.grabberH += this.load.size; // and then adjusts the effective height 
+	   this.grabberH += this.load.getSize(); // and then adjusts the effective height 
 	   this.load = this.nullBlock;      // of the grabber height for a null load.
-	   this.heights[this.w] = currentPile.height; 
+	   this.heights[this.w] = currentPile.getHeight(); 
    }
    
    /**
@@ -348,7 +348,7 @@ class RobotControl
 	   int digTo = currentPile.sizeSearch(size);
 	   if (digTo==-1) // i.e there's no block of that size in the currentPile
 	   { 
-		   this.moveToDifferentSourcePile(); // let's try recursive later...
+		   this.moveToDifferentSourcePile(); 
 	   }
 	   
 	   currentPile = this.piles[this.w];

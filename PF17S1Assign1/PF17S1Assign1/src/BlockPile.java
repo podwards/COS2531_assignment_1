@@ -16,10 +16,10 @@ public class BlockPile {
 	Stack<Block> stack;
 	Stack<Integer> sizeStack;
 	Block temp;
-	int height, position;
+	private int height, position;
 	
 	/* 
-	 * This method initialses the pile. It creates a stack with nothing in it
+	 * This method initialises the pile. It creates a stack with nothing in it
 	 * and so it has a zero height. Because the stack object I've implemented
 	 * can't search for Blocks of a certain height (at least, I couldn't work 
 	 * it out), the sizeStack object is used to search for blocks of a 
@@ -39,11 +39,11 @@ public class BlockPile {
 	public void push(Block block)
 	{
 		this.stack.push(block);
-		this.sizeStack.push(block.size); // TODO: remove this, work out how the search
+		this.sizeStack.push(block.getSize()); // TODO: remove this, work out how the search
 										 // method works for Stacks
-		this.height += block.size;
-		block.top = this.height; // whenever a block is added to the stack, it needs this height
-		block.position = this.position;
+		this.height += block.getSize();
+		block.setTop(this.height); // whenever a block is added to the stack, it needs this height
+		block.setPosition(this.position);
 	}
 	
 	public Block peek()
@@ -54,9 +54,9 @@ public class BlockPile {
 	public Block pop()
 	{
 		temp = this.stack.pop();
-		this.height -= temp.size;
+		this.height -= temp.getSize();
 		this.sizeStack.pop();
-		System.out.format("Removing block %d, now %d to %d%n", temp.size, this.sizeSearch(1), 1);
+		System.out.format("Removing block %d, now %d to %d%n", temp.getSize(), this.sizeSearch(1), 1);
 		return temp;
 	}
 	
@@ -68,6 +68,17 @@ public class BlockPile {
 	public boolean empty()
 	{
 		return this.stack.empty();
+	}
+	
+	public int getHeight()
+	{
+		return this.height;
+	}
+	
+	public int getPosition()
+	{
+		return this.position;
+		
 	}
 
 }
