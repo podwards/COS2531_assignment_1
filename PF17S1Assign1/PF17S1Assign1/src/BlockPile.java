@@ -51,8 +51,6 @@ public class BlockPile {
 		this.sizeStack.push(block.getSize()); /* TODO: remove this, work out how the search
 											     method works for Stacks */
 		this.height += block.getSize();
-		block.setTop(this.height); // whenever a block is added to the stack, it needs this height
-		block.setPosition(this.position);
 	}
 	/**
 	 * Basically a wrapper for the stack objects own peek method. It allows us to check
@@ -102,15 +100,5 @@ public class BlockPile {
 	{
 		return this.height;
 	}
-	
-	/**
-	 * Getter method to get the position of the block
-	 * @return this.height		the current height, it's been updated withs push's and pop's
-	 */
-	/*public int getPosition()
-	{
-		return this.position;
-		
-	}*/
 
 }
