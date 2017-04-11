@@ -37,7 +37,7 @@ class RobotControl
        int[] pile_positions = {1,9,10};
        for (int p: pile_positions)
        {
-    	   this.piles[p] = new BlockPile(p);
+    	   this.piles[p] = new BlockPile();
        }	 
        
        // save the class variables

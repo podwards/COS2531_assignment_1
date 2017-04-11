@@ -16,7 +16,7 @@ public class BlockPile {
 	Stack<Block> stack;
 	Stack<Integer> sizeStack;
 	Block temp;
-	private int height, position;
+	private int height;
 	
 	/** 
 	 * This method initialises the pile. It creates a stack with nothing in it
@@ -26,16 +26,13 @@ public class BlockPile {
 	 * certain size, and the stack and sizeStack are kept up to date together
 	 * to allow the stack object to effectively be searched for a block of
 	 * a specified size.
-	 * 
-	 * @param position	the position of the pile (1, 9 or 10).
 	 */
 	
-	public BlockPile(int position)
+	public BlockPile()
 	{
 		this.stack = new Stack<Block>();
 		this.sizeStack = new Stack<Integer>();
 		this.height = 0;
-		this.position = position;
 	}
 	
 	/**
@@ -75,7 +72,6 @@ public class BlockPile {
 		temp = this.stack.pop();
 		this.height -= temp.getSize();
 		this.sizeStack.pop();
-		System.out.format("Removing block %d, now %d to %d%n", temp.getSize(), this.sizeSearch(1), 1);
 		return temp;
 	}
 	
