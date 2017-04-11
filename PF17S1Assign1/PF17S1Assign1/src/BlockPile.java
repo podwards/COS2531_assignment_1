@@ -49,14 +49,6 @@ public class BlockPile {
 											     method works for Stacks */
 		this.height += block.getSize();
 	}
-	/**
-	 * Basically a wrapper for the stack objects own peek method. It allows us to check
-	 * what's on top of the pile. Currently unused, consider removing.
-	 */
-	public Block peek()
-	{
-		return this.stack.peek();
-	}
 	
 	/**
 	 * Basically a wrapper for the stack objects own pop method. The size stack
@@ -74,7 +66,6 @@ public class BlockPile {
 		this.sizeStack.pop();
 		return temp;
 	}
-	
 	
 	/**
 	 * Finds how many spots down the block of a certain size is.

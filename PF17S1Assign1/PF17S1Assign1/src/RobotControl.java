@@ -7,7 +7,7 @@ class RobotControl
    private BlockPile targetPile, tempPile, sourcePile, currentPile;
    private BlockPile[] piles;
    private int[] heights;
-   private int h, w, d, grabberH, maxHeightArm, maxHeightGrabber; 
+   private int h, w, d, grabberH;
    private int sourcePos, tempPos, targetPos;
    
    /* This method sets the initial positions of things like the height of the 
@@ -18,17 +18,15 @@ class RobotControl
     */ 
    public RobotControl(Robot r)
    {
-	   // setup the crane positions
-       this.r = r; // TODO: remove this?
+       this.r = r;
+	   
+	   // setup the initial crane positions
        this.h = 2; // the height of the arm of the Robot
        this.w = 1; /* the width of the arm of the Robot, and the lateral position
        				  of the grabber and whatever load it has.*/
        this.d = 0; // the depth of the grabber arm
        this.grabberH = 1; /* the effective height of the grabber which includes
        						 the size of the load*/
-       this.maxHeightArm = 14; // TODO: remove this?
-       this.maxHeightGrabber = 14; // TODO: remove this?
-    		  
        this.piles = new BlockPile[11]; /* this array is used to find the correct
        								      pile based on the current position of
        								      the arm (this.w).*/
