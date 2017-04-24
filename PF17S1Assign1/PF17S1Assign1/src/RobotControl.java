@@ -292,10 +292,13 @@ class RobotControl
    {
 	   for (int i = 0; i < blockHeights.length; i++)
 	   {
+		   this.moveBlock(sourcePos, targetPos);
+	       /*
 	       this.armToPosition(this.sourcePos);
 	       this.pickAtPosition();
 	       this.armToPosition(this.targetPos);
 	       this.dropAtPosition();
+	       */
 	   }   
    }
    
@@ -394,56 +397,63 @@ class RobotControl
        this.dropAtPosition();
    }
    
+   /** This function implements the recursive solution for of the Hanoi Towers problem.
+    *  two lines below state simply that we're going to move the top n-1 
+    * blocks from the source pile to the auxiliary pile, and then once that's
+    * done, we move the last block from the source to the target. We rely on 
+    * recursion to do that shifting of n-1 blocks in the same manner.
+    * 
+    * Below is an example for 4 blocks in the initial source pile
+    *                   
+    *                     1 
+    *                     2 
+    *                     3
+    * _____    _____    __4__   Start: target is position 1, source is position 10,
+    *   1        9        10           and auxiliary is position 9
+    *   T        A        S
+    * 
+    *                 
+    *            1        
+    *            2       
+    * _____    __3__    __4__   the first shift: since we're moving the n-1 top blocks
+    *   1        9        10 			to position 9, position 1 effectively functions
+    *   A		 T        S		        as the auxiliary pile.  
+    * 
+    *
+    *            1        
+    *            2       
+    * __4__    __3__    _____   the second move: just moves the bottom block of source
+    *   1        9        10                     to the target pile
+    * 
+    * 
+    *   1 
+    *   2 
+    *   3
+    * __4__    _____    _____   the final shift: moves the pile from position 9  
+    *   1        9        10                     (functional source) onto the 
+    *   T        S        A						 block at the target position
+    *   
+    *   @param nBlocks    the number of blocks that need to be shifted from the source pile
+    *   @param source     an integer for the position of the source pile
+    *   @param source     an integer for the position of the auxiliary pile
+    *   @param target     an integer for the position of the target pile
+    */
    private void shift(int nBlocks, int source, int auxiliary, int target)
    {
 
 	   if (nBlocks > 0) // Because if nBlocks is 0, we're not moving anything
 	   {
-		   /* The two lines below state simply that we're going to move the top n-1 
-		    * blocks from the source pile to the auxiliary pile, and then once that's
-		    * done, we move the last block from the source to the target. We rely on 
-		    * recursion to do that shifting of n-1 blocks in the same manner.
-		    *                   
-		    *                     1 
-		    *                     2 
-		    *                     3
-		    * _____    _____    __4__   Start: target is position 1, source is position 10,
-		    *   1        9        10           and auxiliary is position 9
-		    *  
-		    * 
-		    *                 
-		    *            1        
-		    *            2       
-		    * _____    __3__    __4__   the first shift: since we're moving the n-1 top blocks
-		    *   1        9        10 			to position 9, position 1 effectively functions
-		    *   						        as the auxiliary pile.   
-		    *
-		    * 
-		    *
-		    *            1        
-		    *            2       
-		    * __4__    __3__    _____   the second move: just moves the bottom block of source
-		    *   1        9        10                     to the target pile
-		    * 
-		    *   1 
-		    *   2 
-		    *   3
-		    * __4__    _____    _____   the final shift: moves the pile from axuiliary position 
-		    *   1        9        10                     onto the block at the source position
-		    */
+		   // Move the top n-1 blocks of the source pile
 		   this.shift(nBlocks - 1, source, target, auxiliary);
+		   /* Move the the remaining block of the pile, which we can assume by construction
+		      is the largest block not yet in the target pile. */
 		   this.moveBlock(source, target);
 		   /* Once that's done, it's just a matter of moving the entire pile at the auxillary
-		    * position on top of the source pile.
-		    */
+		    * position on top of the source pile. */
 		   this.shift(nBlocks - 1, auxiliary, source, target);
 	   }
    }
    
-   private void moveBlocksInOrder()
-   {
-	   this.shift(this.piles[sourcePos].getNBlocks(), sourcePos, tempPos, targetPos);
-   }
 
    public void control(int barHeights[], int blockHeights[], int required[], boolean ordered)
    {
@@ -452,17 +462,17 @@ class RobotControl
 	   this.setBlockPositions(blockHeights);  
 	   
 	   
-	   if (ordered)
-	   {
-		   this.moveBlocksInOrder();// This gets run for part E
+	   if (ordered) 
+	   {   // This gets run for part E
+		   this.shift(this.piles[sourcePos].getNBlocks(), sourcePos, tempPos, targetPos);
 	   }
 	   else if (required.length == 0)
-	   {
-		   this.moveBlocksFromSourceToStackSimple(blockHeights);  // For parts A-C
+	   {   // For parts A-C
+		   this.moveBlocksFromSourceToStackSimple(blockHeights);  
 	   }
 	   else 
-	   {
-		   this.moveBlocksInOrder(required); // This gets run for part D
+	   {   // This gets run for part D
+		   this.moveBlocksInOrder(required); 
 	   }
    }
  
