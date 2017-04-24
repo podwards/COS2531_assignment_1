@@ -20,6 +20,11 @@ public class Block {
     	this.size = size;
     }
         
+    /**
+     * A getter method for block size
+     * 
+     * @return    the size of the block.
+     */
     public int getSize()
     {
     	return this.size;
