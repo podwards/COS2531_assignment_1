@@ -17,5 +17,29 @@ class MyMath
         }
         return max;
     }
+    
+    public static int min(int [] A)
+    {
+        int min = 0;
+        for (int a : A)
+        {
+        	min = Math.min(a, min);
+        }
+        return min;
+    }
+    
+    public static int maxInBounds(int [] A, int lowerBound, int upperBound)
+    {
+        int max = 0;
+        int[] bounds = {lowerBound, upperBound};
+        
+        //bounds = (lowerBound > upperBound) ? [upperBound, lowerBound] : [lowerBound, upperBound];
+        for (int i = min(bounds); i < max(bounds) + 1; i++)
+        {
+        	System.out.format("%d is between %d and %d%n", i, lowerBound, upperBound);
+        	max = Math.max(A[i], max);
+        }
+        return max;
+    }
 }
 

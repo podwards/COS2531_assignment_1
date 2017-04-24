@@ -179,15 +179,16 @@ class RobotControl
     *  This decides what the clearance height of the grabber needs to be by looking
     *  at the heights array which is maintained with all block movements.
     */
-   private int getClearanceHeight()
+   private int getClearanceHeight(int fromPos, int toPos)
    {
 	   /* TODO: make this a bit smarter. It's better to look at the maximum height
 	    * that the robot will need to clear, rather than the maximum of all the 
 	    * heights.
 	    */
 	   
-	   System.out.format("Max height %d%n", MyMath.max(this.heights));
-	   return MyMath.max(this.heights) + 1;
+	   int clearance = MyMath.maxInBounds(this.heights, fromPos, toPos) + 1;
+	   System.out.format("Clearance between %d and %d = %d%n", fromPos, toPos, clearance);
+	   return clearance;
    }
    
    /**
@@ -200,7 +201,7 @@ class RobotControl
    private void resetArmHeight(int requiredHeight)
    {
 	   // try get clearance by increasing grabber height first, then try arm height
-	   System.out.format("Grabber height = %d%n", this.grabberH);
+	   //System.out.format("Grabber height = %d%n", this.grabberH);
 	   
 	   // Find the  total required increase in grabber height
 	   int dG = requiredHeight - this.grabberH; 
@@ -218,7 +219,7 @@ class RobotControl
 		   dH = dG - dD; // and make up the difference with arm height
 	   }
 	   
-	   System.out.format("dD = %d dH  %d%n", dD, dH);
+	   //System.out.format("dD = %d dH  %d%n", dD, dH);
 	   
 	   this.changeD(dD);
 	   this.changeH(dH);
@@ -236,7 +237,7 @@ class RobotControl
 	   // later add optional arguments for height, for now use max of 14
 	   
 	   // ensure that the arm is elevated before moving
-	   int requiredHeight = getClearanceHeight();
+	   int requiredHeight = getClearanceHeight(this.w, p);
 	   this.resetArmHeight(requiredHeight);
 	   
 	   // calculate the necessary change in position
@@ -255,7 +256,7 @@ class RobotControl
 	   
 	   this.resetArmHeight(currentPile.getHeight());
 	   
-	   System.out.println("picking...");
+	   //System.out.println("picking...");
 	   r.pick();
 	   this.load = currentPile.pop();
 	   this.grabberH -= this.load.getSize();
@@ -281,6 +282,23 @@ class RobotControl
 	   this.load = this.nullBlock;      // of the grabber height for a null load.
 	   this.heights[this.w] = currentPile.getHeight(); 
    }
+  /**
+   * This function moves the picker from wherever it is to the provided fromPos, picks up a
+   * block, moves it to the provided toPos, and drops it there.
+   * 
+   * @param fromPos		an integer describing where in piles to find the desired pile to move 
+   * 					a block from
+   * @param toPos    	an integer describing where in piles to find the desired pile to move 
+   * 					a block to
+   */
+   private void moveBlock(int fromPos, int toPos)
+   {
+	   System.out.format("moving block from %d to %d%n", fromPos, toPos);
+	   this.armToPosition(fromPos);
+       this.pickAtPosition();
+       this.armToPosition(toPos);
+       this.dropAtPosition();
+   }
    
    /**
     * Using a for loop and lots of helper functions, move each block from the
@@ -293,32 +311,7 @@ class RobotControl
 	   for (int i = 0; i < blockHeights.length; i++)
 	   {
 		   this.moveBlock(sourcePos, targetPos);
-	       /*
-	       this.armToPosition(this.sourcePos);
-	       this.pickAtPosition();
-	       this.armToPosition(this.targetPos);
-	       this.dropAtPosition();
-	       */
 	   }   
-   }
-   
-   /**
-    * 'Source pile' in this sense is either the original source or the temp pile, 
-    * as both can be a source of blocks. This method moves the robot such that it
-    * has the opportunity to find a block in another pile that's not the target.
-    */
-   private void moveToDifferentSourcePile()
-   {
-	   if (this.w == this.sourcePos)
-	   {
-		   this.armToPosition(this.tempPos);
-	   }else if (this.w == this.tempPos)
-	   {
-		   this.armToPosition(this.sourcePos);
-	   }else
-	   {
-		   this.armToPosition(this.sourcePos);
-	   }
    }
    
    /**
@@ -329,11 +322,32 @@ class RobotControl
     */
    private void shiftTopBlock()
    {
-	   System.out.format("shifting from %d%n", this.w);
-	   this.pickAtPosition();
-	   this.moveToDifferentSourcePile();
-	   this.dropAtPosition();
-	   this.moveToDifferentSourcePile();
+	   moveBlock(this.w, otherSource());
+	   armToPosition(otherSource());
+   }
+   
+   /**
+    * Locates a pile with a block of the desired size and returns the number of positions
+    * down in the pile it is.
+    * 
+    * @param size   the desired size of a block.
+    * @return       the number of positions down in the pile it is.
+    */
+   
+   private int findBlockOfSize(int size)
+   {
+	   // Make sure search starts at a valid location. 
+ 	   if (this.w == targetPos) {this.armToPosition(this.otherSource());}  
+ 	   
+ 	   currentPile = this.piles[this.w];
+	   int digTo = currentPile.sizeSearch(size);
+	   // Check we're
+	   if (digTo==-1) 
+	   {
+		   this.armToPosition(this.otherSource());
+		   digTo = currentPile.sizeSearch(size);
+	   } 
+	   return digTo;
    }
    
    /**
@@ -344,36 +358,32 @@ class RobotControl
     * block is on top. It then moves that block to the target.
     * 
     * @param size	the size of the block to be found and moved once found to the target.
-    */
-   private boolean searchAndMove(int size)
-   {
-	   currentPile = this.piles[this.w];
-	   int digTo = currentPile.sizeSearch(size);
-	   if (digTo==-1) // i.e there's no block of that size in the currentPile
-	   { 
-		   this.moveToDifferentSourcePile(); 
-	   }
-	   
-	   currentPile = this.piles[this.w];
-	   digTo = currentPile.sizeSearch(size);
-	   if (digTo==-1)
-	   {
-		   return false;
-	   }
-	   
-	   for (int i = 1; i < digTo; i++)
-	   {
-	       this.shiftTopBlock();      
-	   }
-	   
-	   this.pickAtPosition();
-	   this.armToPosition(this.targetPos);
-	   System.out.format("dropping at %d%n", this.w);
-	   this.dropAtPosition();
-	   this.moveToDifferentSourcePile();
-	   return true;
+    */ 
+   private void searchFindMove(int size)
+   {       
+       // search
+       int digTo = findBlockOfSize(size);    
+       
+ 	   // find
+ 	   for (int i = 1; i < digTo; i++)
+ 	   {
+ 	       this.shiftTopBlock();      
+ 	   }
+ 	   
+ 	   // move
+ 	   this.moveBlock(this.w, targetPos);
    }
    
+   /**
+    * This is just a helper method.
+    * 
+    * @return        the other position that could be a source of blocks
+    */
+   private int otherSource()
+   {
+	   return (this.w == sourcePos) ? tempPos : sourcePos; 
+   }
+      
    /**
     * Implements the searchAndMove method by iterating through the required array.
     * 
@@ -384,25 +394,16 @@ class RobotControl
 	   for (int size: required)
 	   {
 		   System.out.format("Start search for %d%n", size);
-		   this.searchAndMove(size);
+		   this.searchFindMove(size);
 	   }
-   }
+   } 
    
-   private void moveBlock(int fromPos, int toPos)
-   {
-	   System.out.format("moving block from %d to %d%n", fromPos, toPos);
-	   this.armToPosition(fromPos);
-       this.pickAtPosition();
-       this.armToPosition(toPos);
-       this.dropAtPosition();
-   }
-   
-   /** This function implements the recursive solution for of the Hanoi Towers problem.
-    *  two lines below state simply that we're going to move the top n-1 
-    * blocks from the source pile to the auxiliary pile, and then once that's
-    * done, we move the last block from the source to the target. We rely on 
-    * recursion to do that shifting of n-1 blocks in the same manner.
-    * 
+   /** This function implements the recursive solution for of the Hanoi Towers problem to shift
+    *  the top nBlocks of blocks from a source pile to a target pile, with an auxiliary pile
+    *  available to hold blocks to ensure that no blocks are placed on top of a smaller block.
+    *  
+    *  
+    *  
     * Below is an example for 4 blocks in the initial source pile
     *                   
     *                     1 
@@ -464,7 +465,7 @@ class RobotControl
 	   
 	   if (ordered) 
 	   {   // This gets run for part E
-		   this.shift(this.piles[sourcePos].getNBlocks(), sourcePos, tempPos, targetPos);
+		   this.shift(blockHeights.length, sourcePos, tempPos, targetPos);
 	   }
 	   else if (required.length == 0)
 	   {   // For parts A-C
