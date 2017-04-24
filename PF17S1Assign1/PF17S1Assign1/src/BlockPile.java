@@ -16,7 +16,7 @@ public class BlockPile {
 	Stack<Block> stack;
 	Stack<Integer> sizeStack;
 	Block temp;
-	private int height;
+	private int height, nBlocks;
 	
 	/** 
 	 * This method initialises the pile. It creates a stack with nothing in it
@@ -33,6 +33,7 @@ public class BlockPile {
 		this.stack = new Stack<Block>();
 		this.sizeStack = new Stack<Integer>();
 		this.height = 0;
+		this.nBlocks = 0;
 	}
 	
 	/**
@@ -48,6 +49,7 @@ public class BlockPile {
 		this.sizeStack.push(block.getSize()); /* TODO: remove this, work out how the search
 											     method works for Stacks */
 		this.height += block.getSize();
+		this.nBlocks += 1;
 	}
 	
 	/**
@@ -64,6 +66,7 @@ public class BlockPile {
 		temp = this.stack.pop();
 		this.height -= temp.getSize();
 		this.sizeStack.pop();
+		this.nBlocks -= 1;
 		return temp;
 	}
 	
@@ -86,6 +89,16 @@ public class BlockPile {
 	public int getHeight()
 	{
 		return this.height;
+	}
+	
+	public boolean empty()
+	{
+		return this.stack.empty();	
+	}
+	
+	public int getNBlocks()
+	{
+		return this.nBlocks;
 	}
 
 }

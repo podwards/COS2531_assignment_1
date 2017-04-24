@@ -4,7 +4,7 @@ class RobotControl
  {
    private Robot r;
    private Block load, nullBlock;
-   private BlockPile targetPile, tempPile, sourcePile, currentPile;
+   private BlockPile currentPile;
    private BlockPile[] piles;
    private int[] heights;
    private int h, w, d, grabberH;
@@ -185,7 +185,9 @@ class RobotControl
 	    * that the robot will need to clear, rather than the maximum of all the 
 	    * heights.
 	    */
-	   return MyMath.max(this.heights);
+	   
+	   System.out.format("Max height %d%n", MyMath.max(this.heights));
+	   return MyMath.max(this.heights) + 1;
    }
    
    /**
@@ -340,7 +342,7 @@ class RobotControl
     * 
     * @param size	the size of the block to be found and moved once found to the target.
     */
-   private void searchAndMove(int size)
+   private boolean searchAndMove(int size)
    {
 	   currentPile = this.piles[this.w];
 	   int digTo = currentPile.sizeSearch(size);
@@ -351,6 +353,10 @@ class RobotControl
 	   
 	   currentPile = this.piles[this.w];
 	   digTo = currentPile.sizeSearch(size);
+	   if (digTo==-1)
+	   {
+		   return false;
+	   }
 	   
 	   for (int i = 1; i < digTo; i++)
 	   {
@@ -362,6 +368,7 @@ class RobotControl
 	   System.out.format("dropping at %d%n", this.w);
 	   this.dropAtPosition();
 	   this.moveToDifferentSourcePile();
+	   return true;
    }
    
    /**
@@ -377,6 +384,66 @@ class RobotControl
 		   this.searchAndMove(size);
 	   }
    }
+   
+   private void moveBlock(int fromPos, int toPos)
+   {
+	   System.out.format("moving block from %d to %d%n", fromPos, toPos);
+	   this.armToPosition(fromPos);
+       this.pickAtPosition();
+       this.armToPosition(toPos);
+       this.dropAtPosition();
+   }
+   
+   private void shift(int nBlocks, int source, int auxiliary, int target)
+   {
+
+	   if (nBlocks > 0) // Because if nBlocks is 0, we're not moving anything
+	   {
+		   /* The two lines below state simply that we're going to move the top n-1 
+		    * blocks from the source pile to the auxiliary pile, and then once that's
+		    * done, we move the last block from the source to the target. We rely on 
+		    * recursion to do that shifting of n-1 blocks in the same manner.
+		    *                   
+		    *                     1 
+		    *                     2 
+		    *                     3
+		    * _____    _____    __4__   Start: target is position 1, source is position 10,
+		    *   1        9        10           and auxiliary is position 9
+		    *  
+		    * 
+		    *                 
+		    *            1        
+		    *            2       
+		    * _____    __3__    __4__   the first shift: since we're moving the n-1 top blocks
+		    *   1        9        10 			to position 9, position 1 effectively functions
+		    *   						        as the auxiliary pile.   
+		    *
+		    * 
+		    *
+		    *            1        
+		    *            2       
+		    * __4__    __3__    _____   the second move: just moves the bottom block of source
+		    *   1        9        10                     to the target pile
+		    * 
+		    *   1 
+		    *   2 
+		    *   3
+		    * __4__    _____    _____   the final shift: moves the pile from axuiliary position 
+		    *   1        9        10                     onto the block at the source position
+		    */
+		   this.shift(nBlocks - 1, source, target, auxiliary);
+		   this.moveBlock(source, target);
+		   /* Once that's done, it's just a matter of moving the entire pile at the auxillary
+		    * position on top of the source pile.
+		    */
+		   this.shift(nBlocks - 1, auxiliary, source, target);
+	   }
+   }
+   
+   private void moveBlocksInOrder()
+   {
+	   this.shift(this.piles[sourcePos].getNBlocks(), sourcePos, tempPos, targetPos);
+   }
 
    public void control(int barHeights[], int blockHeights[], int required[], boolean ordered)
    {
@@ -384,13 +451,19 @@ class RobotControl
 	   this.setHeights(barHeights);
 	   this.setBlockPositions(blockHeights);  
 	   
-	   if (required.length == 0) // This gets run for parts A-C
-	       {this.moveBlocksFromSourceToStackSimple(blockHeights);}
-	   else // This gets run for parts D and E
-	   	   {this.moveBlocksInOrder(required);}
 	   
-	   
-	  
+	   if (ordered)
+	   {
+		   this.moveBlocksInOrder();// This gets run for part E
+	   }
+	   else if (required.length == 0)
+	   {
+		   this.moveBlocksFromSourceToStackSimple(blockHeights);  // For parts A-C
+	   }
+	   else 
+	   {
+		   this.moveBlocksInOrder(required); // This gets run for part D
+	   }
    }
  
 }  
