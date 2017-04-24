@@ -181,7 +181,7 @@ class RobotControl
     */
    private int getClearanceHeight(int fromPos, int toPos)
    { 
-	   int clearance = MyMath.maxInBounds(this.heights, fromPos, toPos) + 1;
+	   int clearance = MyMath.maxInBounds(this.heights, fromPos, toPos);
 	   System.out.format("Clearance between %d and %d = %d%n", fromPos, toPos, clearance);
 	   return clearance;
    }
