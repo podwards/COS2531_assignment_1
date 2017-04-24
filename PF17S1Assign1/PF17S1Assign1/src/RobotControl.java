@@ -180,12 +180,7 @@ class RobotControl
     *  at the heights array which is maintained with all block movements.
     */
    private int getClearanceHeight(int fromPos, int toPos)
-   {
-	   /* TODO: make this a bit smarter. It's better to look at the maximum height
-	    * that the robot will need to clear, rather than the maximum of all the 
-	    * heights.
-	    */
-	   
+   { 
 	   int clearance = MyMath.maxInBounds(this.heights, fromPos, toPos) + 1;
 	   System.out.format("Clearance between %d and %d = %d%n", fromPos, toPos, clearance);
 	   return clearance;
@@ -333,21 +328,15 @@ class RobotControl
     * @param size   the desired size of a block.
     * @return       the number of positions down in the pile it is.
     */
-   
    private int findBlockOfSize(int size)
    {
-	   // Make sure search starts at a valid location. 
- 	   if (this.w == targetPos) {this.armToPosition(this.otherSource());}  
- 	   
+	   
+	   int blockPos = (piles[sourcePos].sizeSearch(size) > 0) ? sourcePos : tempPos;	   
+	   
+ 	   this.armToPosition(blockPos);
+ 	   	   
  	   currentPile = this.piles[this.w];
-	   int digTo = currentPile.sizeSearch(size);
-	   // Check we're
-	   if (digTo==-1) 
-	   {
-		   this.armToPosition(this.otherSource());
-		   digTo = currentPile.sizeSearch(size);
-	   } 
-	   return digTo;
+	   return currentPile.sizeSearch(size);
    }
    
    /**
