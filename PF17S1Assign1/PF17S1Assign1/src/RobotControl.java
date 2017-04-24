@@ -65,10 +65,10 @@ class RobotControl
 	    * and dropAtPosition methods whenever blocks are moved.*/
 	   this.heights = new int[11]; 
 	   	   
-	   for (int i = 1; i < barHeights.length; i++)
+	   for (int i = 0; i < barHeights.length; i++)
 	   {
-		   // assumes bars get placed from 2, may not be true, but doesn't matter
-		   this.heights[i+1] = barHeights[i];
+		   // bars get placed from 2
+		   this.heights[i+2] = barHeights[i];
 	   }
 	   this.heights[1] = 0; // nothing at target yet
 	   this.heights[9] = 0; // or the temp pile

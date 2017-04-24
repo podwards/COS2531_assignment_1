@@ -36,7 +36,6 @@ class MyMath
         //bounds = (lowerBound > upperBound) ? [upperBound, lowerBound] : [lowerBound, upperBound];
         for (int i = min(bounds); i < max(bounds) + 1; i++)
         {
-        	System.out.format("%d is between %d and %d%n", i, lowerBound, upperBound);
         	max = Math.max(A[i], max);
         }
         return max;
